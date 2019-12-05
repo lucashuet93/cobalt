@@ -32,3 +32,13 @@ variable "publisher_email" {
   description = "The email of publisher/company"
   type        = string
 }
+
+variable "groups" {
+  type = list(object({
+    name = string
+    display_name = string
+    description = string
+  }))
+  default = []
+}
+  
