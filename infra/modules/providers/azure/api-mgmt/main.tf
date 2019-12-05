@@ -1,24 +1,15 @@
-resource "azurerm_resource_group" "example" {
-  name     = "lucas-terraform"
-  location = "East US"
+data "azurerm_resource_group" "apimsvcrg" {
+  name = var.service_plan_resource_group_name
 }
 
-resource "azurerm_api_management" "example" {
-  name                = "lucas-terraform-apim"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-  publisher_name      = "Microsoft"
-  publisher_email     = "lucashh@microsoft.com"
-  sku_name = "Developer_1"
-
+resource "azurerm_api_management" "apimservice" {
+  name                = var.apim_service_name
+  location            = data.azurerm_resource_group.apimsvcrg.location
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  publisher_name      = var.publisher_name
+  publisher_email     = var.publisher_email
+  sku_name            = "${var.apim_service_sku_tier}_${var.apim_service_sku_capacity}"
   policy {
-    xml_content = <<XML
-    <policies>
-      <inbound />
-      <backend />
-      <outbound />
-      <on-error />
-    </policies>
-XML
+    xml_content = var.apim_service_policy_xml_content
   }
 }
