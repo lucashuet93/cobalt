@@ -21,4 +21,6 @@ resource "azurerm_api_management_group" "group" {
   api_management_name = azurerm_api_management.apimservice.name
   display_name        = var.groups[count.index].display_name
   description         = var.groups[count.index].description
+  external_id         = var.groups[count.index].external_id
+  type                = var.groups[count.index].type
 }
