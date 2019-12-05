@@ -21,7 +21,14 @@ variable "apim_service_sku_capacity" {
 variable "apim_service_policy_xml_content" {
   description = "Service policy xml"
   type        = string
-  default     = null
+  default     = <<XML
+<policies>
+    <inbound />
+    <backend />
+    <outbound />
+    <on-error />
+</policies>
+XML
 }
 
 variable "apim_service_policy_xml_link" {
