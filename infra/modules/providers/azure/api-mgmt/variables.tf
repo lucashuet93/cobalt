@@ -21,6 +21,13 @@ variable "apim_service_sku_capacity" {
 variable "apim_service_policy_xml_content" {
   description = "Service policy xml"
   type        = string
+  default     = null
+}
+
+variable "apim_service_policy_xml_link" {
+  description = "Service policy xml"
+  type        = string
+  default     = null
 }
 
 variable "publisher_name" {
@@ -43,4 +50,4 @@ variable "groups" {
   }))
   default = []
 }
-  
+

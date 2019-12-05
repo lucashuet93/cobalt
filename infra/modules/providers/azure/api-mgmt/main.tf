@@ -10,7 +10,8 @@ resource "azurerm_api_management" "apimservice" {
   publisher_email     = var.publisher_email
   sku_name            = "${var.apim_service_sku_tier}_${var.apim_service_sku_capacity}"
   policy {
-    xml_content = var.apim_service_policy_xml_content
+    xml_content = var.apim_service_policy_xml_link == null ? var.apim_service_policy_xml_content : null
+    xml_link    = var.apim_service_policy_xml_link
   }
 }
 
