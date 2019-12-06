@@ -9,11 +9,14 @@ resource "azurerm_api_management" "apimservice" {
   publisher_name      = var.publisher_name
   publisher_email     = var.publisher_email
   sku_name            = "${var.apim_service_sku_tier}_${var.apim_service_sku_capacity}"
+  tags                = var.tags
   policy {
     xml_content = var.apim_service_policy_xml_link == null ? var.apim_service_policy_xml_content : null
     xml_link    = var.apim_service_policy_xml_link
   }
-  tags                = var.tags
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 resource "azurerm_api_management_group" "group" {
