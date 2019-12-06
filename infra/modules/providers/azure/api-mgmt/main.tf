@@ -13,6 +13,7 @@ resource "azurerm_api_management" "apimservice" {
     xml_content = var.apim_service_policy_xml_link == null ? var.apim_service_policy_xml_content : null
     xml_link    = var.apim_service_policy_xml_link
   }
+  tags                = var.tags
 }
 
 resource "azurerm_api_management_group" "group" {

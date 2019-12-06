@@ -18,6 +18,16 @@ variable "apim_service_sku_capacity" {
   type        = number
 }
 
+variable "publisher_name" {
+  description = "The name of publisher/company"
+  type        = string
+}
+
+variable "publisher_email" {
+  description = "The email of publisher/company"
+  type        = string
+}
+
 variable "apim_service_policy_xml_content" {
   description = "Service policy xml"
   type        = string
@@ -37,14 +47,9 @@ variable "apim_service_policy_xml_link" {
   default     = null
 }
 
-variable "publisher_name" {
-  description = "The name of publisher/company"
-  type        = string
-}
-
-variable "publisher_email" {
-  description = "The email of publisher/company"
-  type        = string
+variable "tags" {
+  type    = map(string)
+  default = {}
 }
 
 variable "groups" {
