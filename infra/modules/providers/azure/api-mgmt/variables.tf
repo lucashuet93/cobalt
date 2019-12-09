@@ -63,3 +63,64 @@ variable "groups" {
   default = []
 }
 
+variable "api_version_sets" {
+  type = list(object({
+    name                = string
+    display_name        = string
+    versioning_scheme   = string
+    description         = string
+    version_header_name = string
+    version_query_name  = string
+  }))
+  default = []
+}
+
+variable "apis" {
+  type = list(object({
+    name                          = string
+    display_name                  = string
+    revision                      = string
+    path                          = string
+    protocols                     = list(string)
+    description                   = string
+    file_format                   = string
+    file_location                 = string
+    version                       = string
+    existing_version_set_id       = string
+    provisioned_version_set_index = number
+  }))
+  default = []
+}
+
+variable "products" {
+  type = list(object({
+    product_id            = string
+    display_name          = string
+    subscription_required = bool
+    approval_required     = bool
+    published             = bool
+    description           = string
+  }))
+  default = []
+}
+
+variable "named_values" {
+  type = list(object({
+    name         = string
+    display_name = string
+    value        = string
+    secret       = bool
+    tags         = list(string)
+  }))
+  default = []
+}
+
+variable "backends" {
+  type = list(object({
+    name        = string
+    protocol    = string
+    url         = string
+    description = string
+  }))
+  default = []
+}
