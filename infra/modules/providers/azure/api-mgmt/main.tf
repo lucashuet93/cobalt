@@ -3,6 +3,15 @@ data "azurerm_resource_group" "apimsvcrg" {
 }
 
 locals {
+  default_policy_content = <<XML
+<policies>
+    <inbound />
+    <backend />
+    <outbound />
+    <on-error />
+</policies>
+XML
+  default_policy_format  = "xml"
   product_api_associations = flatten([
     for product in var.products : [
       for api_name in product.apis : [
@@ -31,6 +40,15 @@ locals {
       ]
     ]
   ])
+  api_policy_associations = [
+    for api in var.apis :
+    format("%s = %s = %s", api.name, api.policy == null ? local.default_policy_content : api.policy.content, api.policy == null ? local.default_policy_format : api.policy.format)
+  ]
+  product_policy_associations = [
+    for product in var.products :
+    format("%s = %s = %s", product.product_id, product.policy == null ? local.default_policy_content : product.policy.content, product.policy == null ? local.default_policy_format : product.policy.format)
+  ]
+  service_policy_is_url = replace(var.apim_service_policy_xml.format, "link", "") != var.apim_service_policy_xml.format
 }
 
 resource "azurerm_api_management" "apim_service" {
@@ -42,8 +60,8 @@ resource "azurerm_api_management" "apim_service" {
   sku_name            = "${var.apim_service_sku_tier}_${var.apim_service_sku_capacity}"
   tags                = var.tags
   policy {
-    xml_content = var.apim_service_policy_xml_link == null ? var.apim_service_policy_xml_content : null
-    xml_link    = var.apim_service_policy_xml_link
+    xml_content = local.service_policy_is_url == false ? var.apim_service_policy_xml.content : null
+    xml_link    = local.service_policy_is_url == true ? var.apim_service_policy_xml.content : null
   }
   identity {
     type = "SystemAssigned"
@@ -86,8 +104,8 @@ resource "azurerm_api_management_api" "api" {
   version             = var.apis[count.index].version
   version_set_id      = (var.apis[count.index].existing_version_set_id == null ? (var.apis[count.index].provisioned_version_set_index == null ? null : element(azurerm_api_management_api_version_set.api_version_set, var.apis[count.index].provisioned_version_set_index).id) : var.apis[count.index].existing_version_set_id)
   import {
-    content_format = var.apis[count.index].file_format
-    content_value  = var.apis[count.index].file_location
+    content_format = var.apis[count.index].api_import_file.format
+    content_value  = var.apis[count.index].api_import_file.content
   }
   depends_on = [azurerm_api_management_api_version_set.api_version_set]
 }
@@ -190,4 +208,38 @@ resource "azurerm_template_deployment" "product_tag" {
   deployment_mode = "Incremental"
   template_body   = file("${path.module}/arm-templates/product-tags.template.json")
   depends_on      = [azurerm_api_management_product.product, azurerm_template_deployment.service_tag]
+}
+
+resource "azurerm_template_deployment" "api_policy" {
+  name                = "api_policy"
+  count               = length(local.api_policy_associations)
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+
+  parameters = {
+    service_name   = var.apim_service_name
+    api_name       = split(" = ", local.api_policy_associations[count.index])[0]
+    policy_content = split(" = ", local.api_policy_associations[count.index])[1]
+    policy_format  = split(" = ", local.api_policy_associations[count.index])[2]
+  }
+
+  deployment_mode = "Incremental"
+  template_body   = file("${path.module}/arm-templates/api-policy.template.json")
+  depends_on      = [azurerm_api_management_api.api]
+}
+
+resource "azurerm_template_deployment" "product_policy" {
+  name                = "product_policy"
+  count               = length(local.product_policy_associations)
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+
+  parameters = {
+    service_name   = var.apim_service_name
+    product_id     = split(" = ", local.product_policy_associations[count.index])[0]
+    policy_content = split(" = ", local.product_policy_associations[count.index])[1]
+    policy_format  = split(" = ", local.product_policy_associations[count.index])[2]
+  }
+
+  deployment_mode = "Incremental"
+  template_body   = file("${path.module}/arm-templates/product-policy.template.json")
+  depends_on      = [azurerm_api_management_product.product]
 }

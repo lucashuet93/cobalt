@@ -28,10 +28,14 @@ variable "publisher_email" {
   type        = string
 }
 
-variable "apim_service_policy_xml_content" {
-  description = "Service policy xml"
-  type        = string
-  default     = <<XML
+variable "apim_service_policy_xml" {
+  description = "Service policy xml content and format. Content can be inlined xml or a url"
+  type = object({
+    content = string
+    format  = string
+  })
+  default = {
+    content = <<XML
 <policies>
     <inbound />
     <backend />
@@ -39,12 +43,8 @@ variable "apim_service_policy_xml_content" {
     <on-error />
 </policies>
 XML
-}
-
-variable "apim_service_policy_xml_link" {
-  description = "Service policy xml"
-  type        = string
-  default     = null
+    format  = "xml"
+  }
 }
 
 variable "tags" {
@@ -85,18 +85,25 @@ variable "api_version_sets" {
 
 variable "apis" {
   type = list(object({
-    name                          = string
-    display_name                  = string
-    revision                      = string
-    path                          = string
-    protocols                     = list(string)
-    description                   = string
-    file_format                   = string
-    file_location                 = string
+    name         = string
+    display_name = string
+    revision     = string
+    path         = string
+    protocols    = list(string)
+    description  = string
+    api_import_file = object({
+      content = string
+      format  = string
+    })
     version                       = string
     existing_version_set_id       = string
     provisioned_version_set_index = number
     tags                          = list(string)
+    policy = object({
+      content = string
+      format  = string
+    })
+    operation_policies = map(any)
   }))
   default = []
 }
@@ -111,7 +118,11 @@ variable "products" {
     description           = string
     apis                  = list(string)
     groups                = list(string)
-    tags                          = list(string)
+    tags                  = list(string)
+    policy = object({
+      content = string
+      format  = string
+    })
   }))
   default = []
 }
