@@ -17,9 +17,16 @@ locals {
       ]
     ]
   ])
+  api_tag_associations = flatten([
+    for api in var.apis : [
+      for tag_name in api.tags : [
+        format("%s = %s", api.name, tag_name)
+      ]
+    ]
+  ])
 }
 
-resource "azurerm_api_management" "apimservice" {
+resource "azurerm_api_management" "apim_service" {
   name                = var.apim_service_name
   location            = data.azurerm_resource_group.apimsvcrg.location
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
@@ -40,7 +47,7 @@ resource "azurerm_api_management_group" "group" {
   count               = length(var.groups)
   name                = var.groups[count.index].name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name = azurerm_api_management.apimservice.name
+  api_management_name = azurerm_api_management.apim_service.name
   display_name        = var.groups[count.index].display_name
   description         = var.groups[count.index].description
   external_id         = var.groups[count.index].external_id
@@ -51,7 +58,7 @@ resource "azurerm_api_management_api_version_set" "api_version_set" {
   count               = length(var.api_version_sets)
   name                = var.api_version_sets[count.index].name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name = azurerm_api_management.apimservice.name
+  api_management_name = azurerm_api_management.apim_service.name
   display_name        = var.api_version_sets[count.index].display_name
   versioning_scheme   = var.api_version_sets[count.index].versioning_scheme
   description         = var.api_version_sets[count.index].description
@@ -63,7 +70,7 @@ resource "azurerm_api_management_api" "api" {
   count               = length(var.apis)
   name                = var.apis[count.index].name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name = azurerm_api_management.apimservice.name
+  api_management_name = azurerm_api_management.apim_service.name
   revision            = var.apis[count.index].revision
   display_name        = var.apis[count.index].display_name
   path                = var.apis[count.index].path
@@ -82,7 +89,7 @@ resource "azurerm_api_management_product" "product" {
   count                 = length(var.products)
   product_id            = var.products[count.index].product_id
   resource_group_name   = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name   = azurerm_api_management.apimservice.name
+  api_management_name   = azurerm_api_management.apim_service.name
   display_name          = var.products[count.index].display_name
   subscription_required = var.products[count.index].subscription_required
   approval_required     = var.products[count.index].approval_required
@@ -94,7 +101,7 @@ resource "azurerm_api_management_property" "named_value" {
   count               = length(var.named_values)
   name                = var.named_values[count.index].name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name = azurerm_api_management.apimservice.name
+  api_management_name = azurerm_api_management.apim_service.name
   display_name        = var.named_values[count.index].display_name
   value               = var.named_values[count.index].value
   secret              = var.named_values[count.index].secret
@@ -105,7 +112,7 @@ resource "azurerm_api_management_backend" "backend" {
   count               = length(var.backends)
   name                = var.backends[count.index].name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name = azurerm_api_management.apimservice.name
+  api_management_name = azurerm_api_management.apim_service.name
   protocol            = var.backends[count.index].protocol
   url                 = var.backends[count.index].url
   description         = var.backends[count.index].description
@@ -113,9 +120,9 @@ resource "azurerm_api_management_backend" "backend" {
 
 resource "azurerm_api_management_product_api" "product_api" {
   count               = length(local.product_api_associations)
-  api_name            = split(" = ", local.product_api_associations[count.index])[1]
   product_id          = split(" = ", local.product_api_associations[count.index])[0]
-  api_management_name = azurerm_api_management.apimservice.name
+  api_name            = split(" = ", local.product_api_associations[count.index])[1]
+  api_management_name = azurerm_api_management.apim_service.name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
   depends_on          = [azurerm_api_management_product.product, azurerm_api_management_api.api]
 }
@@ -123,9 +130,25 @@ resource "azurerm_api_management_product_api" "product_api" {
 
 resource "azurerm_api_management_product_group" "product_group" {
   count               = length(local.product_group_associations)
-  group_name          = split(" = ", local.product_group_associations[count.index])[1]
   product_id          = split(" = ", local.product_group_associations[count.index])[0]
-  api_management_name = azurerm_api_management.apimservice.name
+  group_name          = split(" = ", local.product_group_associations[count.index])[1]
+  api_management_name = azurerm_api_management.apim_service.name
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
   depends_on          = [azurerm_api_management_product.product, azurerm_api_management_group.group]
+}
+
+resource "azurerm_template_deployment" "api_tags" {
+  name                = "api_tags"
+  count               = length(local.api_tag_associations)
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+
+  parameters = {
+    service_name = var.apim_service_name
+    api_name     = split(" = ", local.api_tag_associations[count.index])[0]
+    tag_name     = split(" = ", local.api_tag_associations[count.index])[1]
+  }
+
+  deployment_mode = "Incremental"
+  template_body   = file("${path.module}/arm-templates/api-tags.template.json")
+  depends_on      = [azurerm_api_management_api.api]
 }

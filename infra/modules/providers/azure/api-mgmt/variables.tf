@@ -88,6 +88,7 @@ variable "apis" {
     version                       = string
     existing_version_set_id       = string
     provisioned_version_set_index = number
+    tags                          = list(string)
   }))
   default = []
 }
