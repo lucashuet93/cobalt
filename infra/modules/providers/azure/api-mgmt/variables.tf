@@ -103,7 +103,11 @@ variable "apis" {
       content = string
       format  = string
     })
-    operation_policies = map(any)
+    operation_policies = list(object({
+      operation_id = string
+      content      = string
+      format       = string
+    }))
   }))
   default = []
 }

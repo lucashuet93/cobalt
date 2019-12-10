@@ -3,15 +3,6 @@ data "azurerm_resource_group" "apimsvcrg" {
 }
 
 locals {
-  default_policy_content = <<XML
-<policies>
-    <inbound />
-    <backend />
-    <outbound />
-    <on-error />
-</policies>
-XML
-  default_policy_format  = "xml"
   product_api_associations = flatten([
     for product in var.products : [
       for api_name in product.apis : [
@@ -42,12 +33,21 @@ XML
   ])
   api_policy_associations = [
     for api in var.apis :
-    format("%s = %s = %s", api.name, api.policy == null ? local.default_policy_content : api.policy.content, api.policy == null ? local.default_policy_format : api.policy.format)
+    format("%s = %s = %s", api.name, api.policy.content, api.policy.format)
+    if api.policy != null
   ]
   product_policy_associations = [
     for product in var.products :
-    format("%s = %s = %s", product.product_id, product.policy == null ? local.default_policy_content : product.policy.content, product.policy == null ? local.default_policy_format : product.policy.format)
+    format("%s = %s = %s", product.product_id, product.policy.content, product.policy.format)
+    if product.policy != null
   ]
+  operation_policy_associations = flatten([
+    for api in var.apis : [
+      for operation_policy in api.operation_policies : [
+        format("%s = %s = %s = %s", api.name, operation_policy.operation_id, operation_policy.content, operation_policy.format)
+      ]
+    ]
+  ])
   service_policy_is_url = replace(var.apim_service_policy_xml.format, "link", "") != var.apim_service_policy_xml.format
 }
 
@@ -242,4 +242,22 @@ resource "azurerm_template_deployment" "product_policy" {
   deployment_mode = "Incremental"
   template_body   = file("${path.module}/arm-templates/product-policy.template.json")
   depends_on      = [azurerm_api_management_product.product]
+}
+
+resource "azurerm_template_deployment" "operation_policy" {
+  name                = "operation_policy"
+  count               = length(local.operation_policy_associations)
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+
+  parameters = {
+    service_name   = var.apim_service_name
+    api_name       = split(" = ", local.operation_policy_associations[count.index])[0]
+    operation_id   = split(" = ", local.operation_policy_associations[count.index])[1]
+    policy_content = split(" = ", local.operation_policy_associations[count.index])[2]
+    policy_format  = split(" = ", local.operation_policy_associations[count.index])[3]
+  }
+
+  deployment_mode = "Incremental"
+  template_body   = file("${path.module}/arm-templates/operation-policy.template.json")
+  depends_on      = [azurerm_api_management_api.api]
 }
