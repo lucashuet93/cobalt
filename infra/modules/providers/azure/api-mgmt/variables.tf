@@ -100,6 +100,8 @@ variable "products" {
     approval_required     = bool
     published             = bool
     description           = string
+    apis                  = list(string)
+    groups                = list(string)
   }))
   default = []
 }

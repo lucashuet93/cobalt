@@ -2,6 +2,23 @@ data "azurerm_resource_group" "apimsvcrg" {
   name = var.service_plan_resource_group_name
 }
 
+locals {
+  product_api_associations = flatten([
+    for product in var.products : [
+      for api_name in product.apis : [
+        format("%s = %s", product.product_id, api_name)
+      ]
+    ]
+  ])
+  product_group_associations = flatten([
+    for product in var.products : [
+      for group_name in product.groups : [
+        format("%s = %s", product.product_id, group_name)
+      ]
+    ]
+  ])
+}
+
 resource "azurerm_api_management" "apimservice" {
   name                = var.apim_service_name
   location            = data.azurerm_resource_group.apimsvcrg.location
@@ -53,11 +70,12 @@ resource "azurerm_api_management_api" "api" {
   protocols           = var.apis[count.index].protocols
   description         = var.apis[count.index].description
   version             = var.apis[count.index].version
-  version_set_id      = var.apis[count.index].existing_version_set_id == null ? element(azurerm_api_management_api_version_set.api_version_set, var.apis[count.index].provisioned_version_set_index).id : var.apis[count.index].existing_version_set_id
+  version_set_id      = (var.apis[count.index].existing_version_set_id == null ? (var.apis[count.index].provisioned_version_set_index == null ? null : element(azurerm_api_management_api_version_set.api_version_set, var.apis[count.index].provisioned_version_set_index).id) : var.apis[count.index].existing_version_set_id)
   import {
     content_format = var.apis[count.index].file_format
     content_value  = var.apis[count.index].file_location
   }
+  depends_on = [azurerm_api_management_api_version_set.api_version_set]
 }
 
 resource "azurerm_api_management_product" "product" {
@@ -91,4 +109,23 @@ resource "azurerm_api_management_backend" "backend" {
   protocol            = var.backends[count.index].protocol
   url                 = var.backends[count.index].url
   description         = var.backends[count.index].description
+}
+
+resource "azurerm_api_management_product_api" "product_api" {
+  count               = length(local.product_api_associations)
+  api_name            = split(" = ", local.product_api_associations[count.index])[1]
+  product_id          = split(" = ", local.product_api_associations[count.index])[0]
+  api_management_name = azurerm_api_management.apimservice.name
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  depends_on          = [azurerm_api_management_product.product, azurerm_api_management_api.api]
+}
+
+
+resource "azurerm_api_management_product_group" "product_group" {
+  count               = length(local.product_group_associations)
+  group_name          = split(" = ", local.product_group_associations[count.index])[1]
+  product_id          = split(" = ", local.product_group_associations[count.index])[0]
+  api_management_name = azurerm_api_management.apimservice.name
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  depends_on          = [azurerm_api_management_product.product, azurerm_api_management_group.group]
 }
