@@ -52,6 +52,14 @@ variable "tags" {
   default = {}
 }
 
+variable "available_tags" {
+  type = list(object({
+    name         = string
+    display_name = string
+  }))
+  default = []
+}
+
 variable "groups" {
   type = list(object({
     name         = string
@@ -103,6 +111,7 @@ variable "products" {
     description           = string
     apis                  = list(string)
     groups                = list(string)
+    tags                          = list(string)
   }))
   default = []
 }

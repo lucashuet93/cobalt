@@ -5,19 +5,21 @@
         "service_name": {
             "type": "string"
         },
-        "api_name" : {
+        "tag_name" : {
             "type": "string"
         },
-        "tag_name" : {
+        "tag_display_name" : {
             "type": "string"
         }
     },
     "resources": [
         {
-            "name": "[concat(parameters('service_name'), '/', parameters('api_name'), '/', parameters('tag_name'))]",
-            "type": "Microsoft.ApiManagement/service/apis/tags",
+            "name": "[concat(parameters('service_name'), '/', parameters('tag_name'))]",
+            "type": "Microsoft.ApiManagement/service/tags",
             "apiVersion": "2019-01-01",
-            "properties": {}
+            "properties": {
+                "displayName": "[parameters('tag_display_name')]"
+            }
         }
     ]
 }

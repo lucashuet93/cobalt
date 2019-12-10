@@ -5,7 +5,7 @@
         "service_name": {
             "type": "string"
         },
-        "api_name" : {
+        "product_id" : {
             "type": "string"
         },
         "tag_name" : {
@@ -14,8 +14,8 @@
     },
     "resources": [
         {
-            "name": "[concat(parameters('service_name'), '/', parameters('api_name'), '/', parameters('tag_name'))]",
-            "type": "Microsoft.ApiManagement/service/apis/tags",
+            "name": "[concat(parameters('service_name'), '/', parameters('product_id'), '/', parameters('tag_name'))]",
+            "type": "Microsoft.ApiManagement/service/products/tags",
             "apiVersion": "2019-01-01",
             "properties": {}
         }

@@ -17,6 +17,13 @@ locals {
       ]
     ]
   ])
+  product_tag_associations = flatten([
+    for product in var.products : [
+      for tag_name in product.tags : [
+        format("%s = %s", product.product_id, tag_name)
+      ]
+    ]
+  ])
   api_tag_associations = flatten([
     for api in var.apis : [
       for tag_name in api.tags : [
@@ -137,8 +144,24 @@ resource "azurerm_api_management_product_group" "product_group" {
   depends_on          = [azurerm_api_management_product.product, azurerm_api_management_group.group]
 }
 
-resource "azurerm_template_deployment" "api_tags" {
-  name                = "api_tags"
+resource "azurerm_template_deployment" "service_tag" {
+  name                = "service_tag"
+  count               = length(var.available_tags)
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+
+  parameters = {
+    service_name     = var.apim_service_name
+    tag_name         = var.available_tags[count.index].name
+    tag_display_name = var.available_tags[count.index].display_name
+  }
+
+  deployment_mode = "Incremental"
+  template_body   = file("${path.module}/arm-templates/service-tags.template.json")
+  depends_on      = [azurerm_api_management.apim_service]
+}
+
+resource "azurerm_template_deployment" "api_tag" {
+  name                = "api_tag"
   count               = length(local.api_tag_associations)
   resource_group_name = data.azurerm_resource_group.apimsvcrg.name
 
@@ -150,5 +173,21 @@ resource "azurerm_template_deployment" "api_tags" {
 
   deployment_mode = "Incremental"
   template_body   = file("${path.module}/arm-templates/api-tags.template.json")
-  depends_on      = [azurerm_api_management_api.api]
+  depends_on      = [azurerm_api_management_api.api, azurerm_template_deployment.service_tag]
+}
+
+resource "azurerm_template_deployment" "product_tag" {
+  name                = "product_tag"
+  count               = length(local.product_tag_associations)
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+
+  parameters = {
+    service_name = var.apim_service_name
+    product_id   = split(" = ", local.product_tag_associations[count.index])[0]
+    tag_name     = split(" = ", local.product_tag_associations[count.index])[1]
+  }
+
+  deployment_mode = "Incremental"
+  template_body   = file("${path.module}/arm-templates/product-tags.template.json")
+  depends_on      = [azurerm_api_management_product.product, azurerm_template_deployment.service_tag]
 }
