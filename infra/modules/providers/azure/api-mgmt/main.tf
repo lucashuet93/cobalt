@@ -68,6 +68,17 @@ resource "azurerm_api_management" "apim_service" {
   }
 }
 
+resource "azurerm_api_management_property" "named_value" {
+  count               = length(var.named_values)
+  name                = var.named_values[count.index].name
+  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  api_management_name = azurerm_api_management.apim_service.name
+  display_name        = var.named_values[count.index].display_name
+  value               = var.named_values[count.index].value
+  secret              = var.named_values[count.index].secret
+  tags                = var.named_values[count.index].tags
+}
+
 resource "azurerm_api_management_group" "group" {
   count               = length(var.groups)
   name                = var.groups[count.index].name
@@ -77,6 +88,7 @@ resource "azurerm_api_management_group" "group" {
   description         = var.groups[count.index].description
   external_id         = var.groups[count.index].external_id
   type                = var.groups[count.index].type
+  depends_on          = [azurerm_api_management_property.named_value]
 }
 
 resource "azurerm_api_management_api_version_set" "api_version_set" {
@@ -89,6 +101,7 @@ resource "azurerm_api_management_api_version_set" "api_version_set" {
   description         = var.api_version_sets[count.index].description
   version_header_name = var.api_version_sets[count.index].version_header_name
   version_query_name  = var.api_version_sets[count.index].version_query_name
+  depends_on          = [azurerm_api_management_property.named_value]
 }
 
 resource "azurerm_api_management_api" "api" {
@@ -107,7 +120,7 @@ resource "azurerm_api_management_api" "api" {
     content_format = var.apis[count.index].api_import_file.format
     content_value  = var.apis[count.index].api_import_file.content
   }
-  depends_on = [azurerm_api_management_api_version_set.api_version_set]
+  depends_on = [azurerm_api_management_property.named_value, azurerm_api_management_api_version_set.api_version_set]
 }
 
 resource "azurerm_api_management_product" "product" {
@@ -120,17 +133,7 @@ resource "azurerm_api_management_product" "product" {
   approval_required     = var.products[count.index].approval_required
   published             = var.products[count.index].published
   description           = var.products[count.index].description
-}
-
-resource "azurerm_api_management_property" "named_value" {
-  count               = length(var.named_values)
-  name                = var.named_values[count.index].name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
-  api_management_name = azurerm_api_management.apim_service.name
-  display_name        = var.named_values[count.index].display_name
-  value               = var.named_values[count.index].value
-  secret              = var.named_values[count.index].secret
-  tags                = var.named_values[count.index].tags
+  depends_on            = [azurerm_api_management_property.named_value]
 }
 
 resource "azurerm_api_management_backend" "backend" {
@@ -141,6 +144,7 @@ resource "azurerm_api_management_backend" "backend" {
   protocol            = var.backends[count.index].protocol
   url                 = var.backends[count.index].url
   description         = var.backends[count.index].description
+  depends_on          = [azurerm_api_management_property.named_value]
 }
 
 resource "azurerm_api_management_product_api" "product_api" {
