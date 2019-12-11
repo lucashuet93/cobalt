@@ -24,6 +24,11 @@ locals {
       ]
     ]
   ])
+  product_policy_associations = [
+    for product in var.products :
+    format("%s = %s = %s", product.product_id, product.policy.content, product.policy.format)
+    if product.policy != null
+  ]
   api_tag_associations = flatten([
     for api in var.apis : [
       for tag_name in api.tags : [
@@ -35,11 +40,6 @@ locals {
     for api in var.apis :
     format("%s = %s = %s", api.name, api.policy.content, api.policy.format)
     if api.policy != null
-  ]
-  product_policy_associations = [
-    for product in var.products :
-    format("%s = %s = %s", product.product_id, product.policy.content, product.policy.format)
-    if product.policy != null
   ]
   operation_policy_associations = flatten([
     for api in var.apis : [
