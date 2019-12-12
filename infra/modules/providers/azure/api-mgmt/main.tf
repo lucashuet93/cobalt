@@ -115,7 +115,7 @@ resource "azurerm_api_management_api" "api" {
   protocols           = var.apis[count.index].protocols
   description         = var.apis[count.index].description
   version             = var.apis[count.index].version
-  version_set_id      = (var.apis[count.index].existing_version_set_id == null ? (var.apis[count.index].provisioned_version_set_index == null ? null : element(azurerm_api_management_api_version_set.api_version_set, var.apis[count.index].provisioned_version_set_index).id) : var.apis[count.index].existing_version_set_id)
+  version_set_id      = var.apis[count.index].existing_version_set_id == null ? (var.apis[count.index].provisioned_version_set_index == null ? null : element(azurerm_api_management_api_version_set.api_version_set, var.apis[count.index].provisioned_version_set_index).id) : var.apis[count.index].existing_version_set_id
   import {
     content_format = var.apis[count.index].api_import_file.format
     content_value  = var.apis[count.index].api_import_file.content

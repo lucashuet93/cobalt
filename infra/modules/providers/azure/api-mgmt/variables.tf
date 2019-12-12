@@ -1,3 +1,5 @@
+# Required
+
 variable "service_plan_resource_group_name" {
   description = "The name of the resource group in which the service plan was created."
   type        = string
@@ -27,6 +29,8 @@ variable "publisher_email" {
   description = "The email of publisher/company"
   type        = string
 }
+
+# Optional- If a value is provided, each property on the following input variables is required
 
 variable "apim_service_policy_xml" {
   description = "Service policy xml content and format. Content can be inlined xml or a url"
