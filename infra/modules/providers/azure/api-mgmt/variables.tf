@@ -1,7 +1,7 @@
 # Required
 
-variable "service_plan_resource_group_name" {
-  description = "The name of the resource group in which the service plan was created."
+variable "resource_group_name" {
+  description = "The name of the resource group where the API Management service will be deployed to."
   type        = string
 }
 
@@ -10,12 +10,12 @@ variable "apim_service_name" {
   type        = string
 }
 
-variable "apim_service_sku_tier" {
+variable "sku_tier" {
   description = "Apim service sku tier"
   type        = string
 }
 
-variable "apim_service_sku_capacity" {
+variable "sku_capacity" {
   description = "The number of deployed units of the sku, which must be a positive integer"
   type        = number
 }
@@ -32,7 +32,7 @@ variable "publisher_email" {
 
 # Optional- If a value is provided, each property on the following input variables is required
 
-variable "apim_service_policy_xml" {
+variable "policy" {
   description = "Service policy xml content and format. Content can be inlined xml or a url"
   type = object({
     content = string

@@ -50,13 +50,13 @@ XML
 }
 
 module "api_management" {
-  source                           = "../cobalt/infra/modules/providers/azure/api-mgmt"
-  service_plan_resource_group_name = azurerm_resource_group.rg.name
-  apim_service_name                = "cobalt-apim-service"
-  apim_service_sku_tier            = "Developer"
-  apim_service_sku_capacity        = 1
-  publisher_name                   = "Microsoft"
-  publisher_email                  = "test@microsoft.com"
+  source              = "../cobalt/infra/modules/providers/azure/api-mgmt"
+  resource_group_name = azurerm_resource_group.rg.name
+  apim_service_name   = "cobalt-apim-service"
+  sku_tier            = "Developer"
+  sku_capacity        = 1
+  publisher_name      = "Microsoft"
+  publisher_email     = "test@microsoft.com"
   tags = {
     Environment : "dev"
   }
@@ -66,7 +66,7 @@ module "api_management" {
       display_name = "testtag"
     }
   ]
-  apim_service_policy_xml = {
+  policy = {
     content = local.basic_policy
     format  = "xml"
   }

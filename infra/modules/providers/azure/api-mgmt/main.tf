@@ -1,5 +1,5 @@
-data "azurerm_resource_group" "apimsvcrg" {
-  name = var.service_plan_resource_group_name
+data "azurerm_resource_group" "rg" {
+  name = var.resource_group_name
 }
 
 locals {
@@ -48,20 +48,20 @@ locals {
       ]
     ]
   ])
-  service_policy_is_url = replace(var.apim_service_policy_xml.format, "link", "") != var.apim_service_policy_xml.format
+  service_policy_is_url = replace(var.policy.format, "link", "") != var.policy.format
 }
 
 resource "azurerm_api_management" "apim_service" {
   name                = var.apim_service_name
-  location            = data.azurerm_resource_group.apimsvcrg.location
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
   publisher_name      = var.publisher_name
   publisher_email     = var.publisher_email
-  sku_name            = "${var.apim_service_sku_tier}_${var.apim_service_sku_capacity}"
+  sku_name            = "${var.sku_tier}_${var.sku_capacity}"
   tags                = var.tags
   policy {
-    xml_content = local.service_policy_is_url == false ? var.apim_service_policy_xml.content : null
-    xml_link    = local.service_policy_is_url == true ? var.apim_service_policy_xml.content : null
+    xml_content = local.service_policy_is_url == false ? var.policy.content : null
+    xml_link    = local.service_policy_is_url == true ? var.policy.content : null
   }
   identity {
     type = "SystemAssigned"
@@ -71,7 +71,7 @@ resource "azurerm_api_management" "apim_service" {
 resource "azurerm_api_management_property" "named_value" {
   count               = length(var.named_values)
   name                = var.named_values[count.index].name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   api_management_name = azurerm_api_management.apim_service.name
   display_name        = var.named_values[count.index].display_name
   value               = var.named_values[count.index].value
@@ -82,7 +82,7 @@ resource "azurerm_api_management_property" "named_value" {
 resource "azurerm_api_management_group" "group" {
   count               = length(var.groups)
   name                = var.groups[count.index].name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   api_management_name = azurerm_api_management.apim_service.name
   display_name        = var.groups[count.index].display_name
   description         = var.groups[count.index].description
@@ -94,7 +94,7 @@ resource "azurerm_api_management_group" "group" {
 resource "azurerm_api_management_api_version_set" "api_version_set" {
   count               = length(var.api_version_sets)
   name                = var.api_version_sets[count.index].name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   api_management_name = azurerm_api_management.apim_service.name
   display_name        = var.api_version_sets[count.index].display_name
   versioning_scheme   = var.api_version_sets[count.index].versioning_scheme
@@ -107,7 +107,7 @@ resource "azurerm_api_management_api_version_set" "api_version_set" {
 resource "azurerm_api_management_api" "api" {
   count               = length(var.apis)
   name                = var.apis[count.index].name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   api_management_name = azurerm_api_management.apim_service.name
   revision            = var.apis[count.index].revision
   display_name        = var.apis[count.index].display_name
@@ -126,7 +126,7 @@ resource "azurerm_api_management_api" "api" {
 resource "azurerm_api_management_product" "product" {
   count                 = length(var.products)
   product_id            = var.products[count.index].product_id
-  resource_group_name   = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name   = data.azurerm_resource_group.rg.name
   api_management_name   = azurerm_api_management.apim_service.name
   display_name          = var.products[count.index].display_name
   subscription_required = var.products[count.index].subscription_required
@@ -139,7 +139,7 @@ resource "azurerm_api_management_product" "product" {
 resource "azurerm_api_management_backend" "backend" {
   count               = length(var.backends)
   name                = var.backends[count.index].name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   api_management_name = azurerm_api_management.apim_service.name
   protocol            = var.backends[count.index].protocol
   url                 = var.backends[count.index].url
@@ -152,7 +152,7 @@ resource "azurerm_api_management_product_api" "product_api" {
   product_id          = split(" = ", local.product_api_associations[count.index])[0]
   api_name            = split(" = ", local.product_api_associations[count.index])[1]
   api_management_name = azurerm_api_management.apim_service.name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   depends_on          = [azurerm_api_management_product.product, azurerm_api_management_api.api]
 }
 
@@ -162,14 +162,14 @@ resource "azurerm_api_management_product_group" "product_group" {
   product_id          = split(" = ", local.product_group_associations[count.index])[0]
   group_name          = split(" = ", local.product_group_associations[count.index])[1]
   api_management_name = azurerm_api_management.apim_service.name
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   depends_on          = [azurerm_api_management_product.product, azurerm_api_management_group.group]
 }
 
 resource "azurerm_template_deployment" "service_tag" {
   name                = "service_tag"
   count               = length(var.available_tags)
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   parameters = {
     service_name     = var.apim_service_name
@@ -185,7 +185,7 @@ resource "azurerm_template_deployment" "service_tag" {
 resource "azurerm_template_deployment" "api_tag" {
   name                = "api_tag"
   count               = length(local.api_tag_associations)
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   parameters = {
     service_name = var.apim_service_name
@@ -201,7 +201,7 @@ resource "azurerm_template_deployment" "api_tag" {
 resource "azurerm_template_deployment" "product_tag" {
   name                = "product_tag"
   count               = length(local.product_tag_associations)
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   parameters = {
     service_name = var.apim_service_name
@@ -217,7 +217,7 @@ resource "azurerm_template_deployment" "product_tag" {
 resource "azurerm_template_deployment" "api_policy" {
   name                = "api_policy"
   count               = length(local.api_policy_associations)
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   parameters = {
     service_name   = var.apim_service_name
@@ -234,7 +234,7 @@ resource "azurerm_template_deployment" "api_policy" {
 resource "azurerm_template_deployment" "product_policy" {
   name                = "product_policy"
   count               = length(local.product_policy_associations)
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   parameters = {
     service_name   = var.apim_service_name
@@ -251,7 +251,7 @@ resource "azurerm_template_deployment" "product_policy" {
 resource "azurerm_template_deployment" "operation_policy" {
   name                = "operation_policy"
   count               = length(local.operation_policy_associations)
-  resource_group_name = data.azurerm_resource_group.apimsvcrg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   parameters = {
     service_name   = var.apim_service_name
